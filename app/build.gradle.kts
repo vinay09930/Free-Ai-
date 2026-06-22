@@ -9,7 +9,7 @@ plugins {
 
 android {
   namespace = "com.example"
-  compileSdk = 36
+  compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
     applicationId = "com.aistudio.freeai.qxrzkp"
@@ -24,13 +24,10 @@ android {
   signingConfigs {
     create("release") {
       val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
-      val storePassword = System.getenv("STORE_PASSWORD") ?: "android"
-      val keyPassword = System.getenv("KEY_PASSWORD") ?: "android"
-      
       storeFile = file(keystorePath)
-      this.storePassword = storePassword
+      storePassword = System.getenv("STORE_PASSWORD")
       keyAlias = "upload"
-      this.keyPassword = keyPassword
+      keyPassword = System.getenv("KEY_PASSWORD")
     }
     create("debugConfig") {
       storeFile = file("${rootDir}/debug.keystore")
