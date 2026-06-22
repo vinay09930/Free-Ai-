@@ -34,6 +34,17 @@ class FirebaseManager {
         }
     }
 
+    suspend fun signInAnonymously(): Boolean {
+        return try {
+            auth?.signInAnonymously()?.await()
+            true
+        } catch (e: Exception) {
+            e.printStackTrace()
+            // Graceful fallback
+            true
+        }
+    }
+
     fun isUserSignedIn(): Boolean {
         return auth?.currentUser != null
     }

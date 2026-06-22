@@ -2,19 +2,16 @@ package com.example.data
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.JsonObject
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.ResponseBody
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.http.Query
-import retrofit2.http.Streaming
+import retrofit2.http.Header
 import java.util.concurrent.TimeUnit
-import com.example.BuildConfig
 
 @Serializable
 data class GenerateContentRequest(
@@ -25,7 +22,8 @@ data class GenerateContentRequest(
 
 @Serializable
 data class Content(
-    val parts: List<Part>
+    val parts: List<Part>,
+    val role: String? = null
 )
 
 @Serializable
@@ -58,13 +56,42 @@ interface GeminiApiService {
     ): GenerateContentResponse
 }
 
-object RetrofitClient {
-    private const val BASE_URL = "https://generativelanguage.googleapis.com/"
+interface OpenAICompatibleService {
+    @POST("v1/chat/completions")
+    suspend fun chatCompletions(
+        @Header("Authorization") authHeader: String,
+        @Body request: OpenAIChatRequest
+    ): OpenAIChatResponse
+}
 
+@Serializable
+data class OpenAIChatRequest(
+    val model: String,
+    val messages: List<OpenAIMessage>,
+    val temperature: Float? = null
+)
+
+@Serializable
+data class OpenAIMessage(
+    val role: String,
+    val content: String
+)
+
+@Serializable
+data class OpenAIChatResponse(
+    val choices: List<OpenAIChoice>? = null
+)
+
+@Serializable
+data class OpenAIChoice(
+    val message: OpenAIMessage
+)
+
+object RetrofitClient {
+    private val json = Json { ignoreUnknownKeys = true }
     private val loggingInterceptor = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
-
     private val okHttpClient = OkHttpClient.Builder()
         .addInterceptor(loggingInterceptor)
         .connectTimeout(60, TimeUnit.SECONDS)
@@ -73,12 +100,20 @@ object RetrofitClient {
         .build()
 
     val service: GeminiApiService by lazy {
-        val json = Json { ignoreUnknownKeys = true }
         val retrofit = Retrofit.Builder()
-            .baseUrl(BASE_URL)
+            .baseUrl("https://generativelanguage.googleapis.com/")
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
         retrofit.create(GeminiApiService::class.java)
+    }
+    
+    fun createOpenAIService(baseUrl: String): OpenAICompatibleService {
+        val retrofit = Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(okHttpClient)
+            .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
+            .build()
+        return retrofit.create(OpenAICompatibleService::class.java)
     }
 }

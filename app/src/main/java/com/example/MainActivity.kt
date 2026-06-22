@@ -12,6 +12,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.ChatScreen
+import com.example.ui.screens.LoginScreen
+import com.example.ui.screens.ProviderHubScreen
+import com.example.ui.screens.ModelHubScreen
+import com.example.ui.screens.KnowledgeBaseScreen
+import com.example.ui.screens.AIStudioScreen
 import com.example.ui.theme.MyApplicationTheme
 
 class MainActivity : ComponentActivity() {
@@ -26,7 +31,7 @@ class MainActivity : ComponentActivity() {
           val startDest = if (firebaseManager.isUserSignedIn()) "home" else "login"
           NavHost(navController = navController, startDestination = startDest) {
             composable("login") {
-              com.example.ui.screens.LoginScreen(onLoginSuccess = {
+              LoginScreen(onLoginSuccess = {
                   navController.navigate("home") {
                       popUpTo("login") { inclusive = true }
                   }
@@ -35,7 +40,10 @@ class MainActivity : ComponentActivity() {
             composable("home") {
               HomeScreen(
                 onNavigateToChat = { navController.navigate("chat") },
-                onNavigateToSettings = { navController.navigate("ai_studio") }
+                onNavigateToAIStudio = { navController.navigate("ai_studio") },
+                onNavigateToProviders = { navController.navigate("providers") },
+                onNavigateToModels = { navController.navigate("models") },
+                onNavigateToKnowledgeBase = { navController.navigate("knowledge_base") }
               )
             }
             composable("chat") {
@@ -44,7 +52,16 @@ class MainActivity : ComponentActivity() {
               )
             }
             composable("ai_studio") {
-               // AIStudioScreen()
+               AIStudioScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable("providers") {
+               ProviderHubScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable("models") {
+               ModelHubScreen(onNavigateBack = { navController.popBackStack() })
+            }
+            composable("knowledge_base") {
+               KnowledgeBaseScreen(onNavigateBack = { navController.popBackStack() })
             }
           }
         }
@@ -52,4 +69,5 @@ class MainActivity : ComponentActivity() {
     }
   }
 }
+
 

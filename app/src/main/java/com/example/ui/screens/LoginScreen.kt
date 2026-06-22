@@ -110,6 +110,29 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                 ) {
                     Text("Continue with Google", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        coroutineScope.launch {
+                            isLoading = true
+                            val success = firebaseManager.signInAnonymously()
+                            if (success) {
+                                onLoginSuccess()
+                            } else {
+                                Toast.makeText(context, "Guest Login Failed", Toast.LENGTH_SHORT).show()
+                            }
+                            isLoading = false
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(0.8f).height(56.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF9333EA)),
+                    shape = RoundedCornerShape(28.dp)
+                ) {
+                    Text("Continue as Guest", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

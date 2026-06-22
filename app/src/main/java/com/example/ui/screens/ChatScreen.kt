@@ -10,6 +10,8 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -24,6 +26,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -93,6 +96,9 @@ fun ChatScreen(
     }
 
     val listState = androidx.compose.foundation.lazy.rememberLazyListState()
+    var showSettingsDialog by remember { mutableStateOf(false) }
+    val systemPrompt by viewModel.systemPrompt.collectAsState()
+
     val isAtBottom by remember {
         derivedStateOf {
             val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
@@ -180,6 +186,7 @@ fun ChatScreen(
                     title = { 
                         var expanded by remember { mutableStateOf(false) }
                         val currentModel by viewModel.selectedModel.collectAsState()
+                        val availableModels by viewModel.availableModels.collectAsState()
                         
                         Box {
                             Column(modifier = Modifier.clickable { expanded = true }) {
@@ -194,7 +201,7 @@ fun ChatScreen(
                                 onDismissRequest = { expanded = false },
                                 modifier = Modifier.background(Color(0xFF0F0C29))
                             ) {
-                                viewModel.availableModels.forEach { model ->
+                                availableModels.forEach { model ->
                                     DropdownMenuItem(
                                         text = { Text(model, color = Color.White) },
                                         onClick = { 
@@ -212,6 +219,9 @@ fun ChatScreen(
                         }
                     },
                     actions = {
+                        IconButton(onClick = { showSettingsDialog = true }) {
+                            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
+                        }
                         IconButton(onClick = { saveFileLauncher.launch("FreeAI_Chat.txt") }) {
                             Icon(Icons.Default.Share, contentDescription = "Export Chat", tint = Color.White)
                         }
@@ -241,37 +251,18 @@ fun ChatScreen(
                         )
                 )
 
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(messages) { msg ->
-                            ChatBubble(msg, onEditMessage = { textState = it })
-                        }
-                        if (isLoading) {
-                            item {
-                                ChatSkeletonBubble()
-                            }
-                        }
-                    }
-
-                    // Chat Input
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFFFFFFF).copy(alpha = 0.02f))
-                            .border(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.05f))
-                            .windowInsetsPadding(WindowInsets.ime)
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
+                com.example.ui.components.ChatInterface(
+                    messages = messages,
+                    isLoading = isLoading,
+                    listState = listState,
+                    textState = textState,
+                    onTextChange = { textState = it },
+                    onSendMessage = {
+                        viewModel.sendMessage(textState)
+                        textState = ""
+                    },
+                    onEditMessage = { textState = it },
+                    leadingInputContent = {
                         IconButton(
                             onClick = {
                                 val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
@@ -294,45 +285,47 @@ fun ChatScreen(
                                 tint = Color.White
                             )
                         }
-                        Spacer(modifier = Modifier.width(8.dp))
-                        OutlinedTextField(
-                            value = textState,
-                            onValueChange = { textState = it },
-                            placeholder = { Text("Message FreeAI...", color = Color(0xFF94A3B8)) },
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color(0xFF9333EA),
-                                unfocusedBorderColor = Color(0xFFFFFFFF).copy(alpha = 0.1f),
-                                focusedTextColor = Color.White,
-                                unfocusedTextColor = Color.White,
-                                cursorColor = Color(0xFF22D3EE)
-                            )
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(
-                            onClick = {
-                                if (textState.isNotBlank() && !isLoading) {
-                                    viewModel.sendMessage(textState)
-                                    textState = ""
-                                }
-                            },
-                            modifier = Modifier
-                                .background(
-                                    brush = Brush.linearGradient(
-                                        colors = listOf(Color(0xFF9333EA), Color(0xFF06B6D4))
-                                    ), 
-                                    RoundedCornerShape(50)
-                                )
-                                .size(48.dp)
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Send",
-                                tint = Color.White
-                            )
-                        }
                     }
+                )
+
+                if (showSettingsDialog) {
+                    var editPrompt by remember { mutableStateOf(systemPrompt) }
+                    AlertDialog(
+                        onDismissRequest = { showSettingsDialog = false },
+                        containerColor = Color(0xFF1E1E2E),
+                        title = { Text("Chat Settings", color = Color.White) },
+                        text = {
+                            Column {
+                                Text("System Prompt", color = Color(0xFFA0A0A0), fontSize = 14.sp)
+                                Spacer(modifier = Modifier.height(8.dp))
+                                OutlinedTextField(
+                                    value = editPrompt,
+                                    onValueChange = { editPrompt = it },
+                                    placeholder = { Text("Define the persona or behavior...") },
+                                    modifier = Modifier.fillMaxWidth().height(150.dp),
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedTextColor = Color.White,
+                                        unfocusedTextColor = Color.White,
+                                        cursorColor = Color(0xFF9333EA),
+                                        focusedBorderColor = Color(0xFF9333EA)
+                                    )
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = { 
+                                viewModel.setSystemPrompt(editPrompt)
+                                showSettingsDialog = false 
+                            }) {
+                                Text("Save", color = Color(0xFF4ADE80))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showSettingsDialog = false }) {
+                                Text("Cancel", color = Color(0xFFF87171))
+                            }
+                        }
+                    )
                 }
             }
         }
@@ -410,13 +403,27 @@ fun ChatBubble(message: ChatMessage, onEditMessage: ((String) -> Unit)? = null) 
                 ) {
                     MarkdownText(message.text)
                 }
-                Spacer(modifier = Modifier.height(4.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = {
-                        clipboardManager.setText(AnnotatedString(message.text))
-                        Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
-                    }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = Color(0xFF94A3B8), modifier = Modifier.size(14.dp))
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(0.8f),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = {
+                            clipboardManager.setText(AnnotatedString(message.text))
+                            Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
+                        },
+                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF94A3B8)),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.ContentCopy,
+                            contentDescription = "Copy",
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Copy to Clipboard", fontSize = 12.sp)
                     }
                 }
             }
@@ -484,13 +491,15 @@ fun MarkdownText(text: String) {
                                 )
                             }
                         }
-                        Text(
-                            text = code,
-                            color = Color(0xFFE5E5E5),
-                            fontSize = 13.sp,
-                            fontFamily = FontFamily.Monospace,
-                            modifier = Modifier.padding(12.dp)
-                        )
+                        Box(modifier = Modifier.horizontalScroll(rememberScrollState())) {
+                            Text(
+                                text = com.example.ui.components.CodeSyntaxHighlighter.highlightCode(code, language),
+                                color = Color(0xFFE5E5E5),
+                                fontSize = 13.sp,
+                                fontFamily = FontFamily.Monospace,
+                                modifier = Modifier.padding(12.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -501,37 +510,77 @@ fun MarkdownText(text: String) {
 @Composable
 fun ChatSkeletonBubble() {
     val infiniteTransition = rememberInfiniteTransition(label = "skeleton")
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.2f,
-        targetValue = 0.6f,
+    
+    // We create three separate animated values for bouncing dots
+    val dot1Offset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
+            animation = keyframes {
+                durationMillis = 1200
+                0.0f at 0 with LinearEasing
+                -10.0f at 300 with FastOutSlowInEasing
+                0.0f at 600 with FastOutSlowInEasing
+                0.0f at 1200 with LinearEasing
+            },
+            repeatMode = RepeatMode.Restart
         ),
-        label = "alpha"
+        label = "dot1"
+    )
+    val dot2Offset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1200
+                0.0f at 0 with LinearEasing
+                0.0f at 150 with LinearEasing
+                -10.0f at 450 with FastOutSlowInEasing
+                0.0f at 750 with FastOutSlowInEasing
+                0.0f at 1200 with LinearEasing
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "dot2"
+    )
+    val dot3Offset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = keyframes {
+                durationMillis = 1200
+                0.0f at 0 with LinearEasing
+                0.0f at 300 with LinearEasing
+                -10.0f at 600 with FastOutSlowInEasing
+                0.0f at 900 with FastOutSlowInEasing
+                0.0f at 1200 with LinearEasing
+            },
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "dot3"
     )
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp),
+            .padding(vertical = 4.dp),
         contentAlignment = Alignment.CenterStart
     ) {
         Box(
             modifier = Modifier
-                .widthIn(min = 100.dp, max = 280.dp)
+                .widthIn(min = 60.dp)
                 .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 16.dp))
-                .background(Color(0xFFFFFFFF).copy(alpha = alpha * 0.1f))
-                .border(1.dp, Color(0xFFFFFFFF).copy(alpha = alpha * 0.2f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 16.dp))
-                .padding(16.dp)
+                .background(Color(0xFFFFFFFF).copy(alpha = 0.05f))
+                .border(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.1f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 16.dp))
+                .padding(horizontal = 16.dp, vertical = 18.dp)
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = alpha)))
-                Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = alpha * 0.8f)))
-                Box(modifier = Modifier.size(8.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = alpha * 0.6f)))
+                Box(modifier = Modifier.offset(y = dot1Offset.dp).size(8.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.7f)))
+                Box(modifier = Modifier.offset(y = dot2Offset.dp).size(8.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.7f)))
+                Box(modifier = Modifier.offset(y = dot3Offset.dp).size(8.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.7f)))
             }
         }
     }

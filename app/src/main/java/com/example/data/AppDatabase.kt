@@ -25,6 +25,34 @@ data class MessageEntity(
     val timestamp: Long = System.currentTimeMillis()
 )
 
+@Entity(tableName = "provider_entities")
+data class ProviderEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val type: String, // OFFICIAL, BROWSER, LOCAL
+    val status: String,
+    val apiKey: String? = null,
+    val isConnected: Boolean = false
+)
+
+@Entity(tableName = "model_entities")
+data class ModelEntity(
+    @PrimaryKey val id: String,
+    val name: String,
+    val providerId: String,
+    val parameters: String? = null,
+    val size: String? = null,
+    val isInstalled: Boolean = false
+)
+
+@Entity(tableName = "document_entities")
+data class DocumentEntity(
+    @PrimaryKey val id: String,
+    val title: String,
+    val content: String,
+    val createdAt: Long = System.currentTimeMillis()
+)
+
 @Dao
 interface ChatDao {
     @Query("SELECT * FROM chat_entities ORDER BY createdAt DESC")
@@ -40,6 +68,33 @@ interface ChatDao {
     suspend fun insertMessage(message: MessageEntity)
 }
 
+@Dao
+interface ProviderDao {
+    @Query("SELECT * FROM provider_entities")
+    fun getAllProviders(): Flow<List<ProviderEntity>>
+
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
+    suspend fun insertProvider(provider: ProviderEntity)
+}
+
+@Dao
+interface ModelDao {
+    @Query("SELECT * FROM model_entities")
+    fun getAllModels(): Flow<List<ModelEntity>>
+
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
+    suspend fun insertModel(model: ModelEntity)
+}
+
+@Dao
+interface DocumentDao {
+    @Query("SELECT * FROM document_entities")
+    fun getAllDocuments(): Flow<List<DocumentEntity>>
+
+    @Insert(onConflict = androidx.room.OnConflictStrategy.REPLACE)
+    suspend fun insertDocument(document: DocumentEntity)
+}
+
 @Entity(tableName = "user_entities")
 data class UserEntity(
     @PrimaryKey val email: String,
@@ -48,7 +103,17 @@ data class UserEntity(
     val lastLoginToken: String? = null
 )
 
-@Database(entities = [ChatEntity::class, MessageEntity::class, UserEntity::class], version = 2, exportSchema = false)
+@Database(entities = [
+    ChatEntity::class, 
+    MessageEntity::class, 
+    UserEntity::class, 
+    ProviderEntity::class, 
+    ModelEntity::class, 
+    DocumentEntity::class
+], version = 3, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun chatDao(): ChatDao
+    abstract fun providerDao(): ProviderDao
+    abstract fun modelDao(): ModelDao
+    abstract fun documentDao(): DocumentDao
 }

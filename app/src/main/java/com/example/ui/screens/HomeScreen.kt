@@ -23,11 +23,15 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.ui.components.GlassCard
 
 @Composable
 fun HomeScreen(
     onNavigateToChat: () -> Unit,
-    onNavigateToSettings: () -> Unit
+    onNavigateToAIStudio: () -> Unit,
+    onNavigateToProviders: () -> Unit,
+    onNavigateToModels: () -> Unit,
+    onNavigateToKnowledgeBase: () -> Unit
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -89,6 +93,7 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 32.dp)
+                        .clickable { onNavigateToProviders() }
                 ) {
                     Column(
                         modifier = Modifier
@@ -96,7 +101,7 @@ fun HomeScreen(
                             .padding(20.dp)
                     ) {
                         Text(
-                            text = "SYSTEM STATUS",
+                            text = "SYSTEM STATUS (TAP TO VIEW PROVIDERS)",
                             color = Color(0xFF94A3B8),
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
@@ -154,7 +159,7 @@ fun HomeScreen(
                         GlassCard(
                             title = "Local Models",
                             icon = Icons.Default.Storage,
-                            onClick = {},
+                            onClick = onNavigateToModels,
                             accentColor = Color(0xFF06B6D4)
                         )
                     }
@@ -162,7 +167,7 @@ fun HomeScreen(
                         GlassCard(
                             title = "AI Studio",
                             icon = Icons.Default.Settings,
-                            onClick = {},
+                            onClick = onNavigateToAIStudio,
                             accentColor = Color(0xFFF59E0B)
                         )
                     }
@@ -170,7 +175,7 @@ fun HomeScreen(
                         GlassCard(
                             title = "Knowledge Base",
                             icon = Icons.Default.AccountCircle,
-                            onClick = {},
+                            onClick = onNavigateToKnowledgeBase,
                             accentColor = Color(0xFF10B981)
                         )
                     }
@@ -189,50 +194,5 @@ fun GlassPanel(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
             .border(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.1f), RoundedCornerShape(32.dp))
     ) {
         content()
-    }
-}
-
-@Composable
-fun GlassCard(title: String, icon: ImageVector, onClick: () -> Unit, accentColor: Color) {
-    Box(
-        modifier = Modifier
-            .aspectRatio(1.2f)
-            .clip(RoundedCornerShape(24.dp))
-            .background(Color(0xFFFFFFFF).copy(alpha = 0.03f))
-            .border(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.05f), RoundedCornerShape(24.dp))
-            .clickable { onClick() }
-            .padding(16.dp)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(
-                        brush = Brush.linearGradient(
-                            colors = listOf(accentColor.copy(alpha = 0.2f), accentColor.copy(alpha = 0.05f))
-                        )
-                    )
-                    .border(1.dp, accentColor.copy(alpha = 0.3f), RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = title,
-                    tint = accentColor,
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-            Text(
-                text = title,
-                color = Color(0xFF94A3B8),
-                fontWeight = FontWeight.Medium,
-                fontSize = 13.sp
-            )
-        }
     }
 }

@@ -18,11 +18,16 @@ data class ChatMessage(val id: String = java.util.UUID.randomUUID().toString(), 
 
 class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val db = (application as FreeAiApplication).database.chatDao()
+    private val providerManager = (application as FreeAiApplication).providerManager
 
-    val availableModels = listOf("gemini-3.5-flash", "gemini-3.1-pro-preview", "gemini-3.1-flash-lite")
+    private val _availableModels = MutableStateFlow<List<String>>(listOf("gemini-3.5-flash"))
+    val availableModels: StateFlow<List<String>> = _availableModels.asStateFlow()
     
-    private val _selectedModel = MutableStateFlow(availableModels[0])
+    private val _selectedModel = MutableStateFlow("gemini-3.5-flash")
     val selectedModel: StateFlow<String> = _selectedModel.asStateFlow()
+
+    private val _systemPrompt = MutableStateFlow("")
+    val systemPrompt: StateFlow<String> = _systemPrompt.asStateFlow()
 
     private val _messages = MutableStateFlow<List<ChatMessage>>(
         listOf(ChatMessage(text = "Welcome to FreeAI Chat", isUser = false))
@@ -43,6 +48,20 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
                 _sessions.value = chatList
             }
         }
+        viewModelScope.launch(Dispatchers.IO) {
+            val loadedModels = providerManager.listAllModels()
+            val models = loadedModels.map { pair -> pair.first }
+            if (models.isNotEmpty()) {
+                _availableModels.value = models
+                if (!_availableModels.value.contains(_selectedModel.value)) {
+                    _selectedModel.value = models.first()
+                }
+            }
+        }
+    }
+
+    fun setSystemPrompt(prompt: String) {
+        _systemPrompt.value = prompt
     }
 
     fun selectModel(model: String) {
@@ -80,16 +99,19 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
             db.insertMessage(MessageEntity(chatId = cid, text = text, isUser = true))
 
             try {
-                // Prepare context history for Gemini
-                val contents = _messages.value.map { msg ->
-                    Content(parts = listOf(Part(text = msg.text)))
+                // Prepare context history for Gemini using the service
+                val messagePairs = _messages.value.map { msg ->
+                    Pair(msg.text, msg.isUser)
                 }
 
-                val request = GenerateContentRequest(contents = contents)
-                val apiKey = BuildConfig.GEMINI_API_KEY
-
-                val response = RetrofitClient.service.generateContent(_selectedModel.value, apiKey, request)
-                val replyText = response.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text ?: "No response from AI."
+                val providerManager = (getApplication<Application>() as FreeAiApplication).providerManager
+                val provider = providerManager.getProviderForModel(_selectedModel.value)
+                val replyText = if (provider != null) {
+                    val result = provider.chat(messagePairs, _selectedModel.value, _systemPrompt.value.takeIf { it.isNotBlank() })
+                    result.getOrElse { "Error: ${it.message}" }
+                } else {
+                    "Error: No provider found for model ${_selectedModel.value}."
+                }
                 
                 db.insertMessage(MessageEntity(chatId = cid, text = replyText, isUser = false))
                 
