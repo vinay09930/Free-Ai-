@@ -1,0 +1,6 @@
+{
+  "name": "FreeAI",
+  "description": "A modern AI operating system for Android. Connect to multi-models like Gemini with an intuitive chat interface.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

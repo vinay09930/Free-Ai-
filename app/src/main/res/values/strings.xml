@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">FreeAI</string>
+    <!-- Fallback values to prevent crash if google-services.json is missing -->
+    <string name="google_app_id">1:1234567890:android:321abc</string>
+    <string name="gcm_defaultSenderId">1234567890</string>
+    <string name="default_web_client_id">123456-abc.apps.googleusercontent.com</string>
+    <string name="project_id">placeholder-project</string>
+</resources>
