@@ -20,11 +20,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
     private val db = (application as FreeAiApplication).database.chatDao()
     private val providerManager = (application as FreeAiApplication).providerManager
 
-    private val _availableModels = MutableStateFlow<List<String>>(listOf("gemini-3.5-flash"))
-    val availableModels: StateFlow<List<String>> = _availableModels.asStateFlow()
+    private val _availableModels = MutableStateFlow<List<Pair<String, String>>>(listOf(Pair("gemini-3.5-flash", "Gemini API")))
+    val availableModels: StateFlow<List<Pair<String, String>>> = _availableModels.asStateFlow()
     
     private val _selectedModel = MutableStateFlow("gemini-3.5-flash")
     val selectedModel: StateFlow<String> = _selectedModel.asStateFlow()
+    
+    private val _selectedProviderName = MutableStateFlow("Gemini API")
+    val selectedProviderName: StateFlow<String> = _selectedProviderName.asStateFlow()
 
     private val _systemPrompt = MutableStateFlow("")
     val systemPrompt: StateFlow<String> = _systemPrompt.asStateFlow()
@@ -50,11 +53,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch(Dispatchers.IO) {
             val loadedModels = providerManager.listAllModels()
-            val models = loadedModels.map { pair -> pair.first }
-            if (models.isNotEmpty()) {
-                _availableModels.value = models
-                if (!_availableModels.value.contains(_selectedModel.value)) {
-                    _selectedModel.value = models.first()
+            if (loadedModels.isNotEmpty()) {
+                _availableModels.value = loadedModels
+                if (_availableModels.value.none { it.first == _selectedModel.value }) {
+                    val first = loadedModels.first()
+                    _selectedModel.value = first.first
+                    _selectedProviderName.value = first.second
+                } else {
+                    _selectedProviderName.value = loadedModels.first { it.first == _selectedModel.value }.second
                 }
             }
         }
@@ -64,8 +70,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
         _systemPrompt.value = prompt
     }
 
-    fun selectModel(model: String) {
+    fun selectModel(model: String, providerName: String) {
         _selectedModel.value = model
+        _selectedProviderName.value = providerName
     }
 
     fun createNewSession() {
@@ -106,17 +113,42 @@ class ChatViewModel(application: Application) : AndroidViewModel(application) {
 
                 val providerManager = (getApplication<Application>() as FreeAiApplication).providerManager
                 val provider = providerManager.getProviderForModel(_selectedModel.value)
-                val replyText = if (provider != null) {
-                    val result = provider.chat(messagePairs, _selectedModel.value, _systemPrompt.value.takeIf { it.isNotBlank() })
-                    result.getOrElse { "Error: ${it.message}" }
+                if (provider != null) {
+                    var isFirstToken = true
+                    var accumulatedText = ""
+                    val aiMessageId = java.util.UUID.randomUUID().toString()
+                    
+                    provider.chatStream(messagePairs, _selectedModel.value, _systemPrompt.value.takeIf { it.isNotBlank() })
+                        .collect { result ->
+                            if (result.isSuccess) {
+                                accumulatedText += result.getOrNull() ?: ""
+                                if (isFirstToken) {
+                                    isFirstToken = false
+                                    // Add the initial ai message to the UI list and set user message to DELIVERED
+                                    _messages.value = _messages.value.map { if (it.id == userMessage.id) it.copy(status = MessageStatus.DELIVERED) else it } + ChatMessage(id = aiMessageId, text = accumulatedText, isUser = false)
+                                } else {
+                                    // Update existing ai message
+                                    _messages.value = _messages.value.map { if (it.id == aiMessageId) it.copy(text = accumulatedText) else it }
+                                }
+                            } else {
+                                val errorMsg = "Error: ${result.exceptionOrNull()?.message}"
+                                accumulatedText += "\n$errorMsg"
+                                if (isFirstToken) {
+                                    isFirstToken = false
+                                    _messages.value = _messages.value.map { if (it.id == userMessage.id) it.copy(status = MessageStatus.ERROR) else it } + ChatMessage(id = aiMessageId, text = errorMsg, isUser = false, status = MessageStatus.ERROR)
+                                } else {
+                                    _messages.value = _messages.value.map { if (it.id == aiMessageId) it.copy(text = accumulatedText, status = MessageStatus.ERROR) else it }
+                                }
+                            }
+                        }
+                    
+                    // After collection completes, safe to save.
+                    db.insertMessage(MessageEntity(chatId = cid, text = accumulatedText, isUser = false))
                 } else {
-                    "Error: No provider found for model ${_selectedModel.value}."
+                    val errorMsg = "Error: No provider found for model ${_selectedModel.value}."
+                    db.insertMessage(MessageEntity(chatId = cid, text = errorMsg, isUser = false))
+                    _messages.value = _messages.value.map { if (it.id == userMessage.id) it.copy(status = MessageStatus.ERROR) else it } + ChatMessage(text = errorMsg, isUser = false, status = MessageStatus.ERROR)
                 }
-                
-                db.insertMessage(MessageEntity(chatId = cid, text = replyText, isUser = false))
-                
-                // Update live state with delivered status
-                _messages.value = _messages.value.map { if (it.id == userMessage.id) it.copy(status = MessageStatus.DELIVERED) else it } + ChatMessage(text = replyText, isUser = false)
             } catch (e: Exception) {
                 val errorMsg = "Error: ${e.localizedMessage}"
                 db.insertMessage(MessageEntity(chatId = cid, text = errorMsg, isUser = false))

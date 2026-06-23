@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -54,6 +55,7 @@ fun ChatScreen(
     onNavigateBack: () -> Unit,
     isDarkTheme: Boolean = true,
     onThemeToggle: () -> Unit = {},
+    onNavigateToModelManager: () -> Unit = {},
     viewModel: ChatViewModel = viewModel()
 ) {
     var textState by remember { mutableStateOf("") }
@@ -188,6 +190,7 @@ fun ChatScreen(
                     title = { 
                         var expanded by remember { mutableStateOf(false) }
                         val currentModel by viewModel.selectedModel.collectAsState()
+                        val currentProviderName by viewModel.selectedProviderName.collectAsState()
                         val availableModels by viewModel.availableModels.collectAsState()
                         
                         Box {
@@ -196,18 +199,18 @@ fun ChatScreen(
                                     Text("FreeAI Chat", color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
                                     Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Model", tint = MaterialTheme.colorScheme.onBackground)
                                 }
-                                Text("Using $currentModel", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text("Using $currentModel ($currentProviderName)", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                             DropdownMenu(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false },
                                 modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
-                                availableModels.forEach { model ->
+                                availableModels.forEach { (model, providerName) ->
                                     DropdownMenuItem(
-                                        text = { Text(model, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                                        text = { Text("$model ($providerName)", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                                         onClick = { 
-                                            viewModel.selectModel(model)
+                                            viewModel.selectModel(model, providerName)
                                             expanded = false 
                                         }
                                     )
@@ -223,6 +226,9 @@ fun ChatScreen(
                     actions = {
                         TextButton(onClick = onThemeToggle) {
                             Text(if (isDarkTheme) "Light" else "Dark", color = MaterialTheme.colorScheme.onBackground)
+                        }
+                        IconButton(onClick = onNavigateToModelManager) {
+                            Icon(Icons.Default.Add, contentDescription = "Model Manager", tint = MaterialTheme.colorScheme.onBackground)
                         }
                         IconButton(onClick = { showSettingsDialog = true }) {
                             Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)

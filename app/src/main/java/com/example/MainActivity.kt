@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import com.example.ui.screens.ModelManagerScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -55,8 +56,12 @@ class MainActivity : ComponentActivity() {
               ChatScreen(
                 onNavigateBack = { navController.popBackStack() },
                 isDarkTheme = isDarkTheme,
-                onThemeToggle = { isDarkTheme = !isDarkTheme }
+                onThemeToggle = { isDarkTheme = !isDarkTheme },
+                onNavigateToModelManager = { navController.navigate("model_manager") }
               )
+            }
+            composable("model_manager") {
+              ModelManagerScreen(onNavigateBack = { navController.popBackStack() })
             }
             composable("ai_studio") {
                AIStudioScreen(onNavigateBack = { navController.popBackStack() })
