@@ -52,6 +52,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun ChatScreen(
     onNavigateBack: () -> Unit,
+    isDarkTheme: Boolean = true,
+    onThemeToggle: () -> Unit = {},
     viewModel: ChatViewModel = viewModel()
 ) {
     var textState by remember { mutableStateOf("") }
@@ -116,40 +118,40 @@ fun ChatScreen(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                drawerContainerColor = Color(0xFF0F0C29),
+                drawerContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                 modifier = Modifier.width(300.dp)
             ) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Text("Recent Sessions", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
+                Text("Recent Sessions", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 20.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
                 Button(
                     onClick = { viewModel.createNewSession(); scope.launch { drawerState.close() } },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF9333EA))
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("+ New Chat")
+                    Text("+ New Chat", color = MaterialTheme.colorScheme.onPrimary)
                 }
                 Spacer(modifier = Modifier.height(16.dp))
                 
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = { searchQuery = it },
-                    placeholder = { Text("Search sessions...", color = Color(0xFF94A3B8), fontSize = 14.sp) },
+                    placeholder = { Text("Search sessions...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.7f), fontSize = 14.sp) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp)
                         .height(56.dp),
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFF9333EA),
-                        unfocusedBorderColor = Color(0xFFFFFFFF).copy(alpha = 0.1f),
-                        focusedTextColor = Color.White,
-                        unfocusedTextColor = Color.White,
-                        cursorColor = Color(0xFF22D3EE)
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.1f),
+                        focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     ),
                     leadingIcon = {
-                        Icon(Icons.Default.Search, contentDescription = "Search", tint = Color(0xFF94A3B8), modifier = Modifier.size(20.dp))
+                        Icon(Icons.Default.Search, contentDescription = "Search", tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.7f), modifier = Modifier.size(20.dp))
                     }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
@@ -170,9 +172,9 @@ fun ChatScreen(
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, tint = Color(0xFFA0A0A0))
+                            Icon(Icons.Default.ChatBubbleOutline, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.7f))
                             Spacer(modifier = Modifier.width(16.dp))
-                            Text(session.title, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(session.title, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
@@ -180,7 +182,7 @@ fun ChatScreen(
         }
     ) {
         Scaffold(
-            containerColor = Color(0xFF050208),
+            containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 TopAppBar(
                     title = { 
@@ -191,19 +193,19 @@ fun ChatScreen(
                         Box {
                             Column(modifier = Modifier.clickable { expanded = true }) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Text("FreeAI Chat", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-                                    Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Model", tint = Color.White)
+                                    Text("FreeAI Chat", color = MaterialTheme.colorScheme.onBackground, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+                                    Icon(Icons.Default.ArrowDropDown, contentDescription = "Select Model", tint = MaterialTheme.colorScheme.onBackground)
                                 }
-                                Text("Using $currentModel", color = Color(0xFF4ADE80), fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text("Using $currentModel", color = MaterialTheme.colorScheme.primary, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                             }
                             DropdownMenu(
                                 expanded = expanded,
                                 onDismissRequest = { expanded = false },
-                                modifier = Modifier.background(Color(0xFF0F0C29))
+                                modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
                             ) {
                                 availableModels.forEach { model ->
                                     DropdownMenuItem(
-                                        text = { Text(model, color = Color.White) },
+                                        text = { Text(model, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                                         onClick = { 
                                             viewModel.selectModel(model)
                                             expanded = false 
@@ -215,18 +217,21 @@ fun ChatScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onBackground)
                         }
                     },
                     actions = {
+                        TextButton(onClick = onThemeToggle) {
+                            Text(if (isDarkTheme) "Light" else "Dark", color = MaterialTheme.colorScheme.onBackground)
+                        }
                         IconButton(onClick = { showSettingsDialog = true }) {
-                            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = Color.White)
+                            Icon(Icons.Default.Settings, contentDescription = "Settings", tint = MaterialTheme.colorScheme.onBackground)
                         }
                         IconButton(onClick = { saveFileLauncher.launch("FreeAI_Chat.txt") }) {
-                            Icon(Icons.Default.Share, contentDescription = "Export Chat", tint = Color.White)
+                            Icon(Icons.Default.Share, contentDescription = "Export Chat", tint = MaterialTheme.colorScheme.onBackground)
                         }
                         IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = Color.White)
+                            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = MaterialTheme.colorScheme.onBackground)
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
@@ -246,7 +251,7 @@ fun ChatScreen(
                         .size(250.dp)
                         .background(
                             brush = Brush.radialGradient(
-                                colors = listOf(Color(0xFF9333EA).copy(alpha = 0.2f), Color.Transparent)
+                                colors = listOf(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), Color.Transparent)
                             )
                         )
                 )
@@ -276,13 +281,13 @@ fun ChatScreen(
                                 }
                             },
                             modifier = Modifier
-                                .background(Color(0xFFFFFFFF).copy(alpha = 0.1f), RoundedCornerShape(50))
+                                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), RoundedCornerShape(50))
                                 .size(48.dp)
                         ) {
                             Icon(
                                 Icons.Default.Mic,
                                 contentDescription = "Speech to Text",
-                                tint = Color.White
+                                tint = MaterialTheme.colorScheme.onBackground
                             )
                         }
                     }
@@ -292,11 +297,11 @@ fun ChatScreen(
                     var editPrompt by remember { mutableStateOf(systemPrompt) }
                     AlertDialog(
                         onDismissRequest = { showSettingsDialog = false },
-                        containerColor = Color(0xFF1E1E2E),
-                        title = { Text("Chat Settings", color = Color.White) },
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        title = { Text("Chat Settings", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         text = {
                             Column {
-                                Text("System Prompt", color = Color(0xFFA0A0A0), fontSize = 14.sp)
+                                Text("System Prompt", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.7f), fontSize = 14.sp)
                                 Spacer(modifier = Modifier.height(8.dp))
                                 OutlinedTextField(
                                     value = editPrompt,
@@ -304,10 +309,10 @@ fun ChatScreen(
                                     placeholder = { Text("Define the persona or behavior...") },
                                     modifier = Modifier.fillMaxWidth().height(150.dp),
                                     colors = OutlinedTextFieldDefaults.colors(
-                                        focusedTextColor = Color.White,
-                                        unfocusedTextColor = Color.White,
-                                        cursorColor = Color(0xFF9333EA),
-                                        focusedBorderColor = Color(0xFF9333EA)
+                                        focusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        unfocusedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        cursorColor = MaterialTheme.colorScheme.primary,
+                                        focusedBorderColor = MaterialTheme.colorScheme.primary
                                     )
                                 )
                             }
@@ -317,12 +322,12 @@ fun ChatScreen(
                                 viewModel.setSystemPrompt(editPrompt)
                                 showSettingsDialog = false 
                             }) {
-                                Text("Save", color = Color(0xFF4ADE80))
+                                Text("Save", color = MaterialTheme.colorScheme.primary)
                             }
                         },
                         dismissButton = {
                             TextButton(onClick = { showSettingsDialog = false }) {
-                                Text("Cancel", color = Color(0xFFF87171))
+                                Text("Cancel", color = MaterialTheme.colorScheme.error)
                             }
                         }
                     )
@@ -350,7 +355,7 @@ fun ChatBubble(message: ChatMessage, onEditMessage: ((String) -> Unit)? = null) 
                     modifier = Modifier
                         .widthIn(max = 280.dp)
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 16.dp, bottomEnd = 0.dp))
-                        .background(Color(0xFF9333EA).copy(alpha = 0.8f))
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.8f))
                         .padding(12.dp)
                 ) {
                     Text(
@@ -365,28 +370,28 @@ fun ChatBubble(message: ChatMessage, onEditMessage: ((String) -> Unit)? = null) 
                         clipboardManager.setText(AnnotatedString(message.text))
                         Toast.makeText(context, "Copied", Toast.LENGTH_SHORT).show()
                     }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = Color(0xFF94A3B8), modifier = Modifier.size(14.dp))
+                        Icon(Icons.Default.ContentCopy, contentDescription = "Copy", tint = MaterialTheme.colorScheme.onBackground.copy(alpha=0.6f), modifier = Modifier.size(14.dp))
                     }
                     if (onEditMessage != null) {
                         IconButton(onClick = { onEditMessage(message.text) }, modifier = Modifier.size(24.dp)) {
-                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color(0xFF94A3B8), modifier = Modifier.size(14.dp))
+                            Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.onBackground.copy(alpha=0.6f), modifier = Modifier.size(14.dp))
                         }
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     
                     when (message.status) {
                         MessageStatus.SENDING -> {
-                            CircularProgressIndicator(modifier = Modifier.size(12.dp), color = Color(0xFF94A3B8), strokeWidth = 1.dp)
+                            CircularProgressIndicator(modifier = Modifier.size(12.dp), color = MaterialTheme.colorScheme.onBackground.copy(alpha=0.6f), strokeWidth = 1.dp)
                         }
                         MessageStatus.DELIVERED -> {
-                            Text("Delivered", color = Color(0xFF94A3B8), fontSize = 10.sp)
+                            Text("Delivered", color = MaterialTheme.colorScheme.onBackground.copy(alpha=0.6f), fontSize = 10.sp)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Icon(Icons.Default.Check, contentDescription = "Delivered", tint = Color(0xFF4ADE80), modifier = Modifier.size(12.dp))
+                            Icon(Icons.Default.Check, contentDescription = "Delivered", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(12.dp))
                         }
                         MessageStatus.ERROR -> {
-                            Text("Error", color = Color.Red, fontSize = 10.sp)
+                            Text("Error", color = MaterialTheme.colorScheme.error, fontSize = 10.sp)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Icon(Icons.Default.Error, contentDescription = "Error", tint = Color.Red, modifier = Modifier.size(12.dp))
+                            Icon(Icons.Default.Error, contentDescription = "Error", tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(12.dp))
                         }
                     }
                 }
@@ -397,8 +402,8 @@ fun ChatBubble(message: ChatMessage, onEditMessage: ((String) -> Unit)? = null) 
                     modifier = Modifier
                         .widthIn(max = 300.dp)
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 16.dp))
-                        .background(Color(0xFFFFFFFF).copy(alpha = 0.05f))
-                        .border(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.1f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 16.dp))
+                        .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f))
+                        .border(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 16.dp))
                         .padding(12.dp)
                 ) {
                     MarkdownText(message.text)
@@ -413,7 +418,7 @@ fun ChatBubble(message: ChatMessage, onEditMessage: ((String) -> Unit)? = null) 
                             clipboardManager.setText(AnnotatedString(message.text))
                             Toast.makeText(context, "Copied to clipboard", Toast.LENGTH_SHORT).show()
                         },
-                        colors = ButtonDefaults.textButtonColors(contentColor = Color(0xFF94A3B8)),
+                        colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)),
                         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                         modifier = Modifier.height(28.dp)
                     ) {
@@ -444,7 +449,7 @@ fun MarkdownText(text: String) {
                 // Regular markdown text
                 Text(
                     text = part.trim(),
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onBackground,
                     fontSize = 15.sp,
                     lineHeight = 22.sp
                 )
@@ -458,21 +463,21 @@ fun MarkdownText(text: String) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp))
-                        .background(Color(0xFF1E1E1E))
-                        .border(1.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant)
+                        .border(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
                 ) {
                     Column {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(Color(0xFF2D2D2D))
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f))
                                 .padding(horizontal = 12.dp, vertical = 6.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = language.ifBlank { "code" },
-                                color = Color(0xFFA0A0A0),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -486,7 +491,7 @@ fun MarkdownText(text: String) {
                                 Icon(
                                     Icons.Default.ContentCopy,
                                     contentDescription = "Copy code",
-                                    tint = Color(0xFFA0A0A0),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -494,7 +499,7 @@ fun MarkdownText(text: String) {
                         Box(modifier = Modifier.horizontalScroll(rememberScrollState())) {
                             Text(
                                 text = com.example.ui.components.CodeSyntaxHighlighter.highlightCode(code, language),
-                                color = Color(0xFFE5E5E5),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 13.sp,
                                 fontFamily = FontFamily.Monospace,
                                 modifier = Modifier.padding(12.dp)
@@ -570,17 +575,17 @@ fun ChatSkeletonBubble() {
             modifier = Modifier
                 .widthIn(min = 60.dp)
                 .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 16.dp))
-                .background(Color(0xFFFFFFFF).copy(alpha = 0.05f))
-                .border(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.1f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 16.dp))
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f))
+                .border(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f), RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 16.dp))
                 .padding(horizontal = 16.dp, vertical = 18.dp)
         ) {
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Box(modifier = Modifier.offset(y = dot1Offset.dp).size(8.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.7f)))
-                Box(modifier = Modifier.offset(y = dot2Offset.dp).size(8.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.7f)))
-                Box(modifier = Modifier.offset(y = dot3Offset.dp).size(8.dp).clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.7f)))
+                Box(modifier = Modifier.offset(y = dot1Offset.dp).size(8.dp).clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)))
+                Box(modifier = Modifier.offset(y = dot2Offset.dp).size(8.dp).clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)))
+                Box(modifier = Modifier.offset(y = dot3Offset.dp).size(8.dp).clip(RoundedCornerShape(50)).background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.7f)))
             }
         }
     }

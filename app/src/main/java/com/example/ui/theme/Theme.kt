@@ -22,17 +22,33 @@ private val DarkColorScheme =
       surfaceVariant = SurfaceDark,
       onPrimary = Color.White,
       onSecondary = Color.Black,
-      onBackground = TextPrimary,
-      onSurface = TextPrimary,
-      onSurfaceVariant = TextSecondary
+      onBackground = TextPrimaryDark,
+      onSurface = TextPrimaryDark,
+      onSurfaceVariant = TextSecondaryDark
+  )
+
+private val LightColorScheme =
+  lightColorScheme(
+      primary = PurplePrimary,
+      secondary = CyanAccent,
+      tertiary = CyanAccent,
+      background = LightBackground,
+      surface = SurfaceLight,
+      surfaceTint = SurfaceGlassLight,
+      surfaceVariant = SurfaceLight,
+      onPrimary = Color.White,
+      onSecondary = Color.Black,
+      onBackground = TextPrimaryLight,
+      onSurface = TextPrimaryLight,
+      onSurfaceVariant = TextSecondaryLight
   )
 
 @Composable
 fun MyApplicationTheme(
-  darkTheme: Boolean = true, // Force Dark Mode
+  darkTheme: Boolean = isSystemInDarkTheme(),
   dynamicColor: Boolean = false, // Disable dynamic colors for custom premium look
   content: @Composable () -> Unit,
 ) {
-  val colorScheme = DarkColorScheme
+  val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
   MaterialTheme(colorScheme = colorScheme, typography = Typography, content = content)
 }

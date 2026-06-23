@@ -7,6 +7,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -24,7 +28,8 @@ class MainActivity : ComponentActivity() {
     super.onCreate(savedInstanceState)
     enableEdgeToEdge()
     setContent {
-      MyApplicationTheme(darkTheme = true) { // Dark Mode Only
+      var isDarkTheme by remember { mutableStateOf(true) }
+      MyApplicationTheme(darkTheme = isDarkTheme) { 
         val navController = rememberNavController()
         Surface(modifier = Modifier.fillMaxSize()) {
           val firebaseManager = (applicationContext as FreeAiApplication).firebaseManager
@@ -48,7 +53,9 @@ class MainActivity : ComponentActivity() {
             }
             composable("chat") {
               ChatScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = { navController.popBackStack() },
+                isDarkTheme = isDarkTheme,
+                onThemeToggle = { isDarkTheme = !isDarkTheme }
               )
             }
             composable("ai_studio") {

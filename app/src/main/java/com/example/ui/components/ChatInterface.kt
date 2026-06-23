@@ -54,8 +54,8 @@ fun ChatInterface(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color(0xFFFFFFFF).copy(alpha = 0.02f))
-                .border(1.dp, Color(0xFFFFFFFF).copy(alpha = 0.05f))
+                .background(MaterialTheme.colorScheme.onBackground.copy(alpha = 0.02f))
+                .border(1.dp, MaterialTheme.colorScheme.onBackground.copy(alpha = 0.05f))
                 .windowInsetsPadding(WindowInsets.ime)
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
@@ -65,15 +65,15 @@ fun ChatInterface(
             OutlinedTextField(
                 value = textState,
                 onValueChange = onTextChange,
-                placeholder = { Text("Message FreeAI...", color = Color(0xFF94A3B8)) },
+                placeholder = { Text("Message FreeAI...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha=0.7f)) },
                 modifier = Modifier.weight(1f),
                 shape = RoundedCornerShape(24.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF9333EA),
-                    unfocusedBorderColor = Color(0xFFFFFFFF).copy(alpha = 0.1f),
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White,
-                    cursorColor = Color(0xFF22D3EE)
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.1f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    cursorColor = MaterialTheme.colorScheme.tertiary
                 )
             )
             Spacer(modifier = Modifier.width(8.dp))
@@ -86,7 +86,7 @@ fun ChatInterface(
                 modifier = Modifier
                     .background(
                         brush = Brush.linearGradient(
-                            colors = listOf(Color(0xFF9333EA), Color(0xFF06B6D4))
+                            colors = listOf(MaterialTheme.colorScheme.primary, MaterialTheme.colorScheme.secondary)
                         ),
                         RoundedCornerShape(50)
                     )
